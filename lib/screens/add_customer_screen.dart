@@ -50,9 +50,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                       Navigator.pop(
                         context,
                         Customer(
+                          id: '',
                           firstName: firstNameController.text,
                           lastName: lastNameController.text,
                           contactNumber: contactController.text,
+                          order: 0,
                         ),
                       );
                     }

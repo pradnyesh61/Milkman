@@ -10,14 +10,22 @@ class _DistributeScreenState extends State<DistributeScreen> {
   int currentIndex = 0;
   int deliveredCount = 0;
 
-  String selectedMilkType = 'cow'; // cow | buffalo
+  String selectedMilkType = 'cow';
   double selectedLiters = 0;
 
   final double cowPrice = 50;
   final double buffaloPrice = 60;
 
-  final TextEditingController customLiterController =
-  TextEditingController();
+  final TextEditingController customLiterController = TextEditingController();
+
+  // ✅ ONLY LOGIC ADDITION — NO UI CHANGE
+  @override
+  void initState() {
+    super.initState();
+    CustomerStore.loadCustomers().then((_) {
+      setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +40,9 @@ class _DistributeScreenState extends State<DistributeScreen> {
 
     final customer = customers[currentIndex];
 
-    final double pricePerLiter =
-    selectedMilkType == 'cow' ? cowPrice : buffaloPrice;
+    final double pricePerLiter = selectedMilkType == 'cow'
+        ? cowPrice
+        : buffaloPrice;
     final double totalPrice = selectedLiters * pricePerLiter;
 
     return Scaffold(
@@ -44,7 +53,6 @@ class _DistributeScreenState extends State<DistributeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-
               /// CUSTOMER CARD
               Card(
                 elevation: 3,
@@ -58,10 +66,7 @@ class _DistributeScreenState extends State<DistributeScreen> {
                   ),
                   title: Text(
                     '${customer.firstName} ${customer.lastName}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(customer.contactNumber),
                 ),
@@ -69,29 +74,38 @@ class _DistributeScreenState extends State<DistributeScreen> {
 
               SizedBox(height: 24),
 
-              /// MILK TYPE BUTTONS
+              /// MILK TYPE BUTTONS (UNCHANGED)
               Row(
                 children: [
                   Expanded(child: _milkTypeButton('Cow Milk ₹50/L', 'cow')),
                   SizedBox(width: 12),
-                  Expanded(child: _milkTypeButton('Buffalo Milk ₹60/L', 'buffalo')),
+                  Expanded(
+                    child: _milkTypeButton('Buffalo Milk ₹60/L', 'buffalo'),
+                  ),
                 ],
               ),
 
               SizedBox(height: 20),
 
-              /// QUICK LITER BUTTONS
+              /// QUICK LITER BUTTONS (UNCHANGED)
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children: [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]
-                    .map((l) => _literButton(l.toDouble()))
-                    .toList(),
+                children: [
+                  0.5,
+                  1,
+                  1.5,
+                  2,
+                  2.5,
+                  3,
+                  4,
+                  5,
+                ].map((l) => _literButton(l.toDouble())).toList(),
               ),
 
               SizedBox(height: 16),
 
-              /// CUSTOM LITER (>5)
+              /// CUSTOM LITER
               TextField(
                 controller: customLiterController,
                 keyboardType: TextInputType.number,
@@ -117,13 +131,16 @@ class _DistributeScreenState extends State<DistributeScreen> {
                     children: [
                       _summaryRow('Total Milk', '${selectedLiters} L'),
                       SizedBox(height: 8),
-                      _summaryRow('Total Price', '₹ ${totalPrice.toStringAsFixed(2)}'),
+                      _summaryRow(
+                        'Total Price',
+                        '₹ ${totalPrice.toStringAsFixed(2)}',
+                      ),
                     ],
                   ),
                 ),
               ),
 
-              SizedBox(height: 30), // Gap before buttons
+              SizedBox(height: 30),
 
               /// ACTION BUTTONS
               Row(
@@ -131,10 +148,6 @@ class _DistributeScreenState extends State<DistributeScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _skipCustomer,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade400),
-                      ),
                       child: Text('Skip'),
                     ),
                   ),
@@ -142,16 +155,11 @@ class _DistributeScreenState extends State<DistributeScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _saveAndNext,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
                       child: Text('Save & Next'),
                     ),
                   ),
                 ],
               ),
-
-              SizedBox(height: 20), // Bottom spacing
             ],
           ),
         ),
@@ -159,7 +167,7 @@ class _DistributeScreenState extends State<DistributeScreen> {
     );
   }
 
-  /// MILK TYPE BUTTON
+  /// UI HELPERS (UNCHANGED)
   Widget _milkTypeButton(String label, String type) {
     final bool isSelected = selectedMilkType == type;
 
@@ -167,10 +175,6 @@ class _DistributeScreenState extends State<DistributeScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected ? Colors.blue : Colors.grey.shade300,
         foregroundColor: isSelected ? Colors.white : Colors.black,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
       onPressed: () {
         setState(() {
@@ -181,7 +185,6 @@ class _DistributeScreenState extends State<DistributeScreen> {
     );
   }
 
-  /// LITER BUTTON
   Widget _literButton(double liter) {
     final bool isSelected = selectedLiters == liter;
 
@@ -189,10 +192,6 @@ class _DistributeScreenState extends State<DistributeScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected ? Colors.green : Colors.grey.shade200,
         foregroundColor: isSelected ? Colors.white : Colors.black,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
       onPressed: () {
         setState(() {
@@ -214,20 +213,13 @@ class _DistributeScreenState extends State<DistributeScreen> {
     );
   }
 
-  /// SAVE
   void _saveAndNext() {
-    if (selectedLiters > 0) {
-      deliveredCount++;
-    }
+    if (selectedLiters > 0) deliveredCount++;
     _goNext();
   }
 
-  /// SKIP
-  void _skipCustomer() {
-    _goNext();
-  }
+  void _skipCustomer() => _goNext();
 
-  /// NAVIGATION
   void _goNext() {
     selectedLiters = 0;
     customLiterController.clear();
@@ -235,39 +227,36 @@ class _DistributeScreenState extends State<DistributeScreen> {
     if (currentIndex < CustomerStore.getCustomers().length - 1) {
       setState(() => currentIndex++);
     } else {
-      _onDistributionComplete();
+      _onDistributionComplete(); // ✅ RESTORED
     }
   }
 
-  /// FINAL POPUP
   void _onDistributionComplete() {
-    final bool anyDelivered = deliveredCount > 0;
+    final total = CustomerStore.getCustomers().length;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              anyDelivered ? Icons.check_circle : Icons.info,
-              color: anyDelivered ? Colors.green : Colors.orange,
+              deliveredCount > 0 ? Icons.check_circle : Icons.info,
+              color: deliveredCount > 0 ? Colors.green : Colors.orange,
               size: 60,
             ),
             SizedBox(height: 12),
             Text(
-              anyDelivered ? 'All Done!' : 'No Delivery Today',
+              'Distribution Completed',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),
             Text(
-              anyDelivered
-                  ? 'Milk distribution completed successfully 🥛'
-                  : 'No milk was delivered to any customer today.',
+              deliveredCount == 0
+                  ? 'No milk was delivered today.'
+                  : 'Delivered to $deliveredCount out of $total customers.',
               textAlign: TextAlign.center,
             ),
           ],

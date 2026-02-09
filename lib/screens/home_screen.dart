@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../data/CustomerStore.dart';
 import 'distribute_screen.dart';
 import 'customers_screen.dart';
 import 'reports_screen.dart';
@@ -10,20 +13,28 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-
 class _HomeScreenState extends State<HomeScreen> {
+  Future<void> _logout(BuildContext context) async {
+    // 🔥 SIGN OUT FROM FIREBASE
+    await FirebaseAuth.instance.signOut();
+
+    // 🔥 REMOVE ALL PREVIOUS SCREENS
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Milkman'),
-      ),
+      appBar: AppBar(title: Text('Milkman')),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // ✅ IMPROVED HEADER
+            // HEADER
             Container(
               padding: EdgeInsets.fromLTRB(
                 18,
@@ -33,10 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.blue.shade700,
-                    Colors.blue.shade500,
-                  ],
+                  colors: [Colors.blue.shade700, Colors.blue.shade500],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -68,10 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       SizedBox(height: 2),
                       Text(
                         'Milk Provider',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                     ],
                   ),
@@ -85,24 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
               'Distribute Milk',
               DistributeScreen(),
             ),
-            _drawerItem(
-              context,
-              Icons.people,
-              'Customers',
-              CustomersScreen(),
-            ),
-            _drawerItem(
-              context,
-              Icons.bar_chart,
-              'Reports',
-              ReportsScreen(),
-            ),
-            _drawerItem(
-              context,
-              Icons.settings,
-              'Settings',
-              SettingsScreen(),
-            ),
+            _drawerItem(context, Icons.people, 'Customers', CustomersScreen()),
+            _drawerItem(context, Icons.bar_chart, 'Reports', ReportsScreen()),
+            _drawerItem(context, Icons.settings, 'Settings', SettingsScreen()),
 
             Divider(),
 
@@ -110,11 +100,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red),
               title: Text('Logout'),
-              onTap: () {
+              onTap: () async {
+                // 🔥 CLEAR CUSTOMER CACHE
+                CustomerStore.clear();
+
+                await FirebaseAuth.instance.signOut();
+
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => LoginScreen()),
-                      (route) => false,
+                  (_) => false,
                 );
               },
             ),
@@ -122,16 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // 🏠 HOME BODY (unchanged, already good)
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade100,
-              Colors.blue.shade50,
-              Colors.white,
-            ],
+            colors: [Colors.blue.shade100, Colors.blue.shade50, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -156,10 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               Text(
                 'Pradnyesh',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.blueGrey,
-                ),
+                style: TextStyle(fontSize: 20, color: Colors.blueGrey),
               ),
 
               SizedBox(height: 20),
@@ -173,11 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.local_shipping,
-                        size: 36,
-                        color: Colors.blue,
-                      ),
+                      Icon(Icons.local_shipping, size: 36, color: Colors.blue),
                       SizedBox(width: 16),
                       Expanded(
                         child: Text(
@@ -203,8 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListTile(
                   leading: Icon(Icons.menu, color: Colors.green),
                   title: Text('Use the menu to get started'),
-                  subtitle:
-                  Text('Distribute milk, manage customers & reports'),
+                  subtitle: Text('Distribute milk, manage customers & reports'),
                 ),
               ),
 
@@ -226,20 +208,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   ListTile _drawerItem(
-      BuildContext context,
-      IconData icon,
-      String title,
-      Widget screen,
-      ) {
+    BuildContext context,
+    IconData icon,
+    String title,
+    Widget screen,
+  ) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
       onTap: () {
         Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => screen),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
       },
     );
   }

@@ -9,6 +9,17 @@ class CustomersScreen extends StatefulWidget {
 
 class _CustomersScreenState extends State<CustomersScreen> {
   @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await CustomerStore.loadCustomers();
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final customers = CustomerStore.getCustomers();
 
@@ -25,44 +36,30 @@ class _CustomersScreenState extends State<CustomersScreen> {
               );
 
               if (newCustomer != null) {
-                setState(() {
-                  CustomerStore.addCustomer(newCustomer);
-                });
+                await CustomerStore.addCustomer(newCustomer);
+                setState(() {});
               }
             },
           ),
         ],
       ),
-
       body: customers.isEmpty
           ? Center(child: Text('No customers added yet'))
           : ReorderableListView.builder(
         padding: EdgeInsets.all(16),
         itemCount: customers.length,
-        onReorder: (oldIndex, newIndex) {
-          setState(() {
-            CustomerStore.reorderCustomers(oldIndex, newIndex);
-          });
+        onReorder: (oldIndex, newIndex) async {
+          await CustomerStore.reorderCustomers(oldIndex, newIndex);
+          setState(() {});
         },
         itemBuilder: (context, index) {
           final customer = customers[index];
-
           return Card(
-            key: ValueKey(customer.contactNumber),
+            key: ValueKey(customer.id),
             margin: EdgeInsets.only(bottom: 12),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
             child: ListTile(
               leading: Icon(Icons.drag_handle),
-              title: Text(
-                '${customer.firstName} ${customer.lastName}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blue.shade900,
-                ),
-              ),
+              title: Text('${customer.firstName} ${customer.lastName}'),
               subtitle: Text(customer.contactNumber),
             ),
           );
