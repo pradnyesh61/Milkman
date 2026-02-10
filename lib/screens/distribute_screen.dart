@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/CustomerStore.dart';
+import '../data/DeliveryRepository.dart';
 
 class DistributeScreen extends StatefulWidget {
   @override
@@ -213,10 +214,37 @@ class _DistributeScreenState extends State<DistributeScreen> {
     );
   }
 
-  void _saveAndNext() {
-    if (selectedLiters > 0) deliveredCount++;
-    _goNext();
+  Future<void> _saveAndNext() async {
+    final customer = CustomerStore.getCustomers()[currentIndex];
+
+    final pricePerLiter =
+    selectedMilkType == 'cow' ? cowPrice : buffaloPrice;
+
+    final bool milkGiven = selectedLiters > 0;
+
+    try {
+      await DeliveryRepository.saveDelivery(
+        customer: customer,
+        milkGiven: selectedLiters > 0,
+        milkType: selectedMilkType,
+        liters: selectedLiters,
+        pricePerLiter: pricePerLiter
+      );
+
+      if (milkGiven) {
+        deliveredCount++;
+      }
+
+      _goNext();
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save delivery')),
+      );
+    }
   }
+
+
 
   void _skipCustomer() => _goNext();
 
