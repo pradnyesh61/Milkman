@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../data/CustomerStore.dart';
 import 'distribute_screen.dart';
 import 'customers_screen.dart';
-import 'reports_screen.dart';
+import 'ReportsHomeScreen.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
 
@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
               DistributeScreen(),
             ),
             _drawerItem(context, Icons.people, 'Customers', CustomersScreen()),
-            _drawerItem(context, Icons.bar_chart, 'Reports', ReportsScreen()),
+            _drawerItem(context, Icons.bar_chart, 'Reports', ReportsHomeScreen()),
             _drawerItem(context, Icons.settings, 'Settings', SettingsScreen()),
 
             Divider(),
