@@ -7,6 +7,7 @@ import 'customers_screen.dart';
 import 'ReportsHomeScreen.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
+import '../data/dummyDataService.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -189,6 +190,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: Text('Distribute milk, manage customers & reports'),
                 ),
               ),
+
+              // SizedBox(height: 20),
+              //
+              // ElevatedButton(
+              //   onPressed: () async {
+              //     await dummyDataService.insertMassDummyData();
+              //
+              //     ScaffoldMessenger.of(context).showSnackBar(
+              //       const SnackBar(
+              //         content: Text("Dummy data inserted successfully"),
+              //       ),
+              //     );
+              //   },
+              //   child: const Text("Insert Dummy Data"),
+              // ),
+
 
               Spacer(),
 
