@@ -18,7 +18,7 @@ class ReportsHomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 🔹 BUSINESS SUMMARY PREVIEW
-            _businessSummaryCard(),
+          //  _businessSummaryCard(),
 
             const SizedBox(height: 24),
 

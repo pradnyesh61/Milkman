@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CustomerDailyReportScreen extends StatelessWidget {
+  final String customerId;
   final String customerName;
   final int month;
   final int year;
 
   const CustomerDailyReportScreen({
     super.key,
+    required this.customerId,
     required this.customerName,
     required this.month,
     required this.year,
@@ -14,16 +18,106 @@ class CustomerDailyReportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    final deliveriesStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('customers')
+        .doc(customerId)
+        .collection('deliveries')
+        .where('month', isEqualTo: month)
+        .where('year', isEqualTo: year)
+        .orderBy('day')
+        .snapshots();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('$customerName – Report'),
       ),
-      body: Column(
-        children: [
-          _header(),
-          Expanded(child: _dailyList()),
-          _summaryCard(),
-        ],
+      body: StreamBuilder<QuerySnapshot>(
+        stream: deliveriesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text("No data available for this month"),
+            );
+          }
+
+          final docs = snapshot.data!.docs;
+
+          int givenDays = 0;
+          double totalLiters = 0;
+          double totalAmount = 0;
+
+          for (var d in docs) {
+            final data = d.data() as Map<String, dynamic>;
+            final milkGiven = data['milkGiven'] == true;
+
+            if (milkGiven) {
+              givenDays++;
+              totalLiters +=
+                  (data['liters'] as num?)?.toDouble() ?? 0.0;
+              totalAmount +=
+                  (data['totalPrice'] as num?)?.toDouble() ?? 0.0;
+            }
+          }
+
+          return Column(
+            children: [
+              _header(),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data =
+                    docs[index].data() as Map<String, dynamic>;
+
+                    final milkGiven =
+                        data['milkGiven'] == true;
+
+                    final day = data['day'] as int;
+                    final date =
+                    DateTime(year, month, day);
+
+                    final weekday =
+                    _weekdayName(date.weekday);
+
+                    final liters =
+                        (data['liters'] as num?)
+                            ?.toDouble() ??
+                            0.0;
+
+                    final price =
+                        (data['totalPrice'] as num?)
+                            ?.toDouble() ??
+                            0.0;
+
+                    return _dailyCard(
+                      day: day,
+                      weekday: weekday,
+                      milkGiven: milkGiven,
+                      milkType: data['milkType'] ?? '',
+                      liters: liters,
+                      price: price,
+                    );
+                  },
+                ),
+              ),
+              _summaryCard(
+                givenDays: givenDays,
+                totalLiters: totalLiters,
+                totalAmount: totalAmount,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -32,10 +126,11 @@ class CustomerDailyReportScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment:
+        MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'February $year',
+            '${_monthName(month)} $year',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -47,37 +142,97 @@ class CustomerDailyReportScreen extends StatelessWidget {
     );
   }
 
-  Widget _dailyList() {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: 10, // dummy days
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (context, index) {
-        final milkGiven = index % 3 != 0;
+  Widget _dailyCard({
+    required int day,
+    required String weekday,
+    required bool milkGiven,
+    required String milkType,
+    required double liters,
+    required double price,
+  }) {
+    return Card(
+      elevation: 3,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
 
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor:
-            milkGiven ? Colors.green.shade100 : Colors.red.shade100,
-            child: Icon(
-              milkGiven ? Icons.check : Icons.close,
-              color: milkGiven ? Colors.green : Colors.red,
+            // LEFT DATE COLUMN
+            Column(
+              children: [
+                Text(
+                  day.toString(),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  weekday,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
-          ),
-          title: Text('Day ${index + 1}'),
-          subtitle: Text(
-            milkGiven ? 'Cow • 2.0 L' : 'Milk not taken',
-          ),
-          trailing: Text(
-            milkGiven ? '₹100' : '₹0',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        );
-      },
+
+            const SizedBox(width: 16),
+
+            // CENTER DETAILS
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    milkGiven
+                        ? '$milkType • ${liters.toStringAsFixed(1)} L'
+                        : 'Milk not taken',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    milkGiven
+                        ? 'Delivered'
+                        : 'Skipped',
+                    style: TextStyle(
+                      color: milkGiven
+                          ? Colors.green
+                          : Colors.red,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // RIGHT AMOUNT
+            Text(
+              milkGiven
+                  ? '₹${price.toStringAsFixed(0)}'
+                  : '₹0',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _summaryCard() {
+  Widget _summaryCard({
+    required int givenDays,
+    required double totalLiters,
+    required double totalAmount,
+  }) {
     return Card(
       elevation: 6,
       margin: const EdgeInsets.all(16),
@@ -87,19 +242,55 @@ class CustomerDailyReportScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: const [
-            _SummaryRow('Milk Given Days', '20'),
-            _SummaryRow('Total Liters', '40.0 L'),
-            Divider(),
+          children: [
+            _SummaryRow(
+                'Milk Given Days', givenDays.toString()),
+            _SummaryRow(
+                'Total Liters',
+                '${totalLiters.toStringAsFixed(1)} L'),
+            const Divider(),
             _SummaryRow(
               'Total Amount',
-              '₹2000',
+              '₹${totalAmount.toStringAsFixed(0)}',
               bold: true,
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      '',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return months[month];
+  }
+
+  String _weekdayName(int weekday) {
+    const days = [
+      '',
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun'
+    ];
+    return days[weekday];
   }
 }
 
@@ -117,15 +308,18 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding:
+      const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment:
+        MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
           Text(
             value,
             style: TextStyle(
-              fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+              fontWeight:
+              bold ? FontWeight.bold : FontWeight.w600,
               fontSize: bold ? 16 : 14,
             ),
           ),
